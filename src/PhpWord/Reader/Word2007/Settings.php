@@ -10,16 +10,17 @@
  * file that was distributed with this source code. For the full list of
  * contributors, visit https://github.com/PHPOffice/PHPWord/contributors.
  *
- * @link        https://github.com/PHPOffice/PHPWord
- * @copyright   2010-2016 PHPWord contributors
+ * @see         https://github.com/PHPOffice/PHPWord
+ * @copyright   2010-2017 PHPWord contributors
  * @license     http://www.gnu.org/licenses/lgpl.txt LGPL version 3
  */
 
 namespace PhpOffice\PhpWord\Reader\Word2007;
 
 use PhpOffice\Common\XMLReader;
-use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\ComplexType\TrackChangesView;
+use PhpOffice\PhpWord\PhpWord;
+use PhpOffice\PhpWord\Style\Language;
 
 /**
  * Settings reader
@@ -28,14 +29,12 @@ use PhpOffice\PhpWord\ComplexType\TrackChangesView;
  */
 class Settings extends AbstractPart
 {
-
     private static $booleanProperties = array('hideSpellingErrors', 'hideGrammaticalErrors', 'trackRevisions', 'doNotTrackMoves', 'doNotTrackFormatting', 'evenAndOddHeaders');
 
     /**
      * Read settings.xml.
      *
      * @param \PhpOffice\PhpWord\PhpWord $phpWord
-     * @return void
      */
     public function read(PhpWord $phpWord)
     {
@@ -57,13 +56,34 @@ class Settings extends AbstractPart
                     } else {
                         $docSettings->$method(true);
                     }
-                } else if (method_exists($this, $method)) {
+                } elseif (method_exists($this, $method)) {
                     $this->$method($xmlReader, $phpWord, $node);
-                } else if (method_exists($docSettings, $method)) {
+                } elseif (method_exists($docSettings, $method)) {
                     $docSettings->$method($value);
                 }
             }
         }
+    }
+
+    /**
+     * Sets the document Language
+     *
+     * @param XMLReader $xmlReader
+     * @param PhpWord $phpWord
+     * @param \DOMNode $node
+     */
+    protected function setThemeFontLang(XMLReader $xmlReader, PhpWord $phpWord, \DOMElement $node)
+    {
+        $val = $xmlReader->getAttribute('w:val', $node);
+        $eastAsia = $xmlReader->getAttribute('w:eastAsia', $node);
+        $bidi = $xmlReader->getAttribute('w:bidi', $node);
+
+        $themeFontLang = new Language();
+        $themeFontLang->setLatin($val);
+        $themeFontLang->setLatin($eastAsia);
+        $themeFontLang->setLatin($bidi);
+
+        $phpWord->getSettings()->setThemeFontLang($themeFontLang);
     }
 
     /**
@@ -73,7 +93,7 @@ class Settings extends AbstractPart
      * @param PhpWord $phpWord
      * @param \DOMNode $node
      */
-    protected function setDocumentProtection(XMLReader $xmlReader, PhpWord $phpWord, \DOMNode $node)
+    protected function setDocumentProtection(XMLReader $xmlReader, PhpWord $phpWord, \DOMElement $node)
     {
         $documentProtection = $phpWord->getSettings()->getDocumentProtection();
 
@@ -88,17 +108,17 @@ class Settings extends AbstractPart
      * @param PhpWord $phpWord
      * @param \DOMNode $node
      */
-    protected function setProofState(XMLReader $xmlReader, PhpWord $phpWord, \DOMNode $node)
+    protected function setProofState(XMLReader $xmlReader, PhpWord $phpWord, \DOMElement $node)
     {
         $proofState = $phpWord->getSettings()->getProofState();
 
         $spelling = $xmlReader->getAttribute('w:spelling', $node);
         $grammar = $xmlReader->getAttribute('w:grammar', $node);
 
-        if ($spelling != null) {
+        if ($spelling !== null) {
             $proofState->setSpelling($spelling);
         }
-        if ($grammar != null) {
+        if ($grammar !== null) {
             $proofState->setGrammar($grammar);
         }
     }
@@ -110,13 +130,13 @@ class Settings extends AbstractPart
      * @param PhpWord $phpWord
      * @param \DOMNode $node
      */
-    protected function setZoom(XMLReader $xmlReader, PhpWord $phpWord, \DOMNode $node)
+    protected function setZoom(XMLReader $xmlReader, PhpWord $phpWord, \DOMElement $node)
     {
         $percent = $xmlReader->getAttribute('w:percent', $node);
         $val = $xmlReader->getAttribute('w:val', $node);
 
-        if ($percent != null || $val != null) {
-            $phpWord->getSettings()->setZoom($percent == null ? $val : $percent);
+        if ($percent !== null || $val !== null) {
+            $phpWord->getSettings()->setZoom($percent === null ? $val : $percent);
         }
     }
 
@@ -127,7 +147,7 @@ class Settings extends AbstractPart
      * @param PhpWord $phpWord
      * @param \DOMNode $node
      */
-    protected function setRevisionView(XMLReader $xmlReader, PhpWord $phpWord, \DOMNode $node)
+    protected function setRevisionView(XMLReader $xmlReader, PhpWord $phpWord, \DOMElement $node)
     {
         $revisionView = new TrackChangesView();
         $revisionView->setMarkup($xmlReader->getAttribute('w:markup', $node));
